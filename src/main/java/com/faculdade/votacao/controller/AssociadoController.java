@@ -4,12 +4,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.faculdade.votacao.model.Associado;
-import com.faculdade.votacao.service.AssociadoService;
+
+import com.faculdade.votacao.dto.AssociadoRequestDTO;
+import com.faculdade.votacao.dto.AssociadoResponseDTO;
+import com.faculdade.votacao.dto.ErroResponseDTO;
+import com.faculdade.votacao.exception.BusinessException;
+import com.faculdade.votacao.interfaces.AssociadoInterface;
+
 import java.util.List;
 
 @Tag(name = "Associados", description = "Endpoints para gerenciamento de associados")
@@ -17,8 +21,11 @@ import java.util.List;
 @RequestMapping("/api/v1/associados")
 public class AssociadoController {
 
-    @Autowired
-    private AssociadoService associadoService;
+    private final AssociadoInterface associadoInterface;
+
+    public AssociadoController(AssociadoInterface associadoInterface) {
+        this.associadoInterface = associadoInterface;
+    }
     
     @Operation(summary = "Cadastra um novo associado")
     @ApiResponses(value = {
@@ -27,15 +34,16 @@ public class AssociadoController {
         @ApiResponse(responseCode = "409", description = "CPF já cadastrado")
     })
     @PostMapping
-    public ResponseEntity<?> cadastrarAssociado(@RequestBody Associado associado) {
+    public ResponseEntity<?> cadastrarAssociado(@RequestBody AssociadoRequestDTO request) {
         try {
-            Associado novoAssociado = associadoService.cadastrar(associado);
-            return ResponseEntity.status(HttpStatus.CREATED).body(novoAssociado);
+            AssociadoResponseDTO response = associadoInterface.cadastrar(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body("Não foi possível cadastrar o associado. O CPF já pode estar em uso.");
+            return ResponseEntity.badRequest()
+                .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus())
+                .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
         }
     }
     
@@ -45,16 +53,20 @@ public class AssociadoController {
         @ApiResponse(responseCode = "404", description = "Associado não encontrado")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<Associado> buscarPorId(@PathVariable Long id) {
-        return associadoService.buscarPorId(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+        try {
+            AssociadoResponseDTO response = associadoInterface.buscarAssociado(id);
+            return ResponseEntity.ok(response);
+        } catch (BusinessException e) {
+            return ResponseEntity.status(e.getStatus())
+                .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
+        }
     }
     
     @Operation(summary = "Lista todos os associados")
     @ApiResponse(responseCode = "200", description = "Lista de associados retornada com sucesso")
     @GetMapping
-    public ResponseEntity<List<Associado>> listarTodos() {
-        return ResponseEntity.ok(associadoService.listarTodos());
+    public ResponseEntity<List<AssociadoResponseDTO>> listarTodos() {
+        return ResponseEntity.ok(associadoInterface.listarTodos());
     }
 }
