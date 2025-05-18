@@ -77,8 +77,8 @@ document.getElementById('associadoForm').addEventListener('submit', async (e) =>
             carregarAssociados();
             listarAssociados();
         } else {
-            const error = await response.text();
-            mostrarMensagem('Erro ao cadastrar associado: ' + error, false);
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || 'Erro ao cadastrar associado', false);
         }
     } catch (error) {
         console.error('Erro:', error);
@@ -191,8 +191,8 @@ document.getElementById('votacaoForm').addEventListener('submit', async (e) => {
             mostrarMensagem('Voto registrado com sucesso!', true);
             document.getElementById('votacaoForm').reset();
         } else {
-            const error = await response.text();
-            mostrarMensagem('Erro ao registrar voto: ' + error, false);
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || 'Erro ao registrar voto', false);
         }
     } catch (error) {
         console.error('Erro:', error);

@@ -32,7 +32,7 @@ public class AssociadoService implements AssociadoInterface {
             Associado salvo = associadoRepository.save(associado);
             return associadoMapper.toDto(salvo);
         } catch (Exception e) {
-            throw new BusinessException("Não foi possível cadastrar o associado. O CPF já pode estar em uso.", 
+            throw new BusinessException("Não foi possível concluir o cadastro. Verifique os dados informados.", 
                                        HttpStatus.CONFLICT);
         }
     }
