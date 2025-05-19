@@ -77,8 +77,8 @@ document.getElementById('associadoForm').addEventListener('submit', async (e) =>
             carregarAssociados();
             listarAssociados();
         } else {
-            const error = await response.text();
-            mostrarMensagem('Erro ao cadastrar associado: ' + error, false);
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || 'Erro ao cadastrar associado', false);
         }
     } catch (error) {
         console.error('Erro:', error);
@@ -124,6 +124,27 @@ document.getElementById('sessaoForm').addEventListener('submit', async (e) => {
         pautaId: document.getElementById('pautaSessaoSelect').value,
         minutos: document.getElementById('minutos').value || 1
     };
+    
+    const usarAgendamento = document.getElementById('usarAgendamento').checked;
+    
+    if (usarAgendamento) {
+        const dataInicio = document.getElementById('dataInicio').value;
+        const horaInicio = document.getElementById('horaInicio').value;
+        
+        if (dataInicio && horaInicio) {
+            sessao.dataInicio = `${dataInicio}T${horaInicio}:00`;
+        } else {
+            mostrarMensagem('Informe a data e hora de início para agendar a sessão', false);
+            return;
+        }
+        
+        const dataFim = document.getElementById('dataFim').value;
+        const horaFim = document.getElementById('horaFim').value;
+        
+        if (dataFim && horaFim) {
+            sessao.dataFim = `${dataFim}T${horaFim}:00`;
+        }
+    }
 
     try {
         const response = await fetch('/api/v1/sessoes', {
@@ -135,15 +156,16 @@ document.getElementById('sessaoForm').addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            mostrarMensagem('Sessão aberta com sucesso!', true);
+            mostrarMensagem(`Sessão ${usarAgendamento ? 'agendada' : 'aberta'} com sucesso!`, true);
             document.getElementById('sessaoForm').reset();
+            document.getElementById('agendamentoFields').style.display = 'none';
         } else {
-            const error = await response.text();
-            mostrarMensagem('Erro ao abrir sessão: ' + error, false);
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || `Erro ao ${usarAgendamento ? 'agendar' : 'abrir'} sessão`, false);
         }
     } catch (error) {
         console.error('Erro:', error);
-        mostrarMensagem('Erro ao abrir sessão', false);
+        mostrarMensagem(`Erro ao ${usarAgendamento ? 'agendar' : 'abrir'} sessão`, false);
     }
 });
 
@@ -169,8 +191,8 @@ document.getElementById('votacaoForm').addEventListener('submit', async (e) => {
             mostrarMensagem('Voto registrado com sucesso!', true);
             document.getElementById('votacaoForm').reset();
         } else {
-            const error = await response.text();
-            mostrarMensagem('Erro ao registrar voto: ' + error, false);
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || 'Erro ao registrar voto', false);
         }
     } catch (error) {
         console.error('Erro:', error);
@@ -270,37 +292,6 @@ async function buscarPautaPorId() {
     }
 }
 
-async function buscarSessao() {
-    const sessaoId = document.getElementById('sessaoId').value;
-    if (!sessaoId) {
-        mostrarMensagem('Informe o ID da sessão', false);
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/v1/sessoes/${sessaoId}`);
-        const sessao = await response.json();
-        
-        const resultDiv = document.getElementById('sessaoResult');
-        if (response.ok) {
-            resultDiv.innerHTML = `
-                <div class="data-item">
-                    <strong>Sessão #${sessao.id}</strong><br>
-                    <strong>Pauta:</strong> ${sessao.pauta ? sessao.pauta.titulo : 'N/A'}<br>
-                    <strong>Abertura:</strong> ${new Date(sessao.dataAbertura).toLocaleString()}<br>
-                    <strong>Fechamento:</strong> ${new Date(sessao.dataFechamento).toLocaleString()}<br>
-                    <strong>Status:</strong> ${sessao.aberta ? 'Aberta' : 'Fechada'}
-                </div>
-            `;
-            resultDiv.style.display = 'block';
-        } else {
-            mostrarMensagem('Sessão não encontrada', false);
-        }
-    } catch (error) {
-        mostrarMensagem('Erro ao buscar sessão', false);
-    }
-}
-
 async function consultarResultado() {
     const pautaId = document.getElementById('pautaResultadoSelect').value;
     if (!pautaId) {
@@ -310,9 +301,25 @@ async function consultarResultado() {
 
     try {
         const response = await fetch(`/api/v1/votos/resultado/${pautaId}`);
-        const resultado = await response.json();
         
-        document.getElementById('resultado').innerHTML = `
+        if (!response.ok) {
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || 'Erro ao consultar resultado', false);
+            document.getElementById('resultado').innerHTML = '';
+            return;
+        }
+        
+        const data = await response.json();
+        
+        const resultado = {
+            tituloPauta: data.tituloPauta || 'Título não disponível',
+            totalVotos: data.totalVotos != null ? data.totalVotos : 0,
+            votosSim: data.votosSim != null ? data.votosSim : 0,
+            votosNao: data.votosNao != null ? data.votosNao : 0,
+            resultado: data.resultado || 'Indefinido'
+        };
+        
+        let resultadoHtml = `
             <div class="data-item">
                 <h3>${resultado.tituloPauta}</h3>
                 <strong>Total de votos:</strong> ${resultado.totalVotos}<br>
@@ -321,8 +328,12 @@ async function consultarResultado() {
                 <strong>Resultado:</strong> ${resultado.resultado}
             </div>
         `;
+        
+        document.getElementById('resultado').innerHTML = resultadoHtml;
     } catch (error) {
-        mostrarMensagem('Erro ao consultar resultado', false);
+        console.error('Erro ao consultar resultado:', error);
+        mostrarMensagem('Erro ao consultar resultado. Verifique o console para detalhes.', false);
+        document.getElementById('resultado').innerHTML = '';
     }
 }
 
@@ -335,4 +346,55 @@ function mostrarMensagem(mensagem, sucesso) {
         backgroundColor: sucesso ? "#28a745" : "#dc3545",
         stopOnFocus: true
     }).showToast();
+}
+
+async function buscarSessao() {
+    const id = document.getElementById('sessaoId').value;
+    if (!id) {
+        mostrarMensagem('Informe um ID de sessão', false);
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/v1/sessoes/${id}`);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            mostrarMensagem(errorData.mensagem || 'Sessão não encontrada', false);
+            document.getElementById('sessaoResult').innerHTML = '';
+            return;
+        }
+        
+        const sessao = await response.json();
+        
+        const dataAbertura = new Date(sessao.dataAbertura).toLocaleString();
+        const dataFechamento = new Date(sessao.dataFechamento).toLocaleString();
+        
+        const agora = new Date();
+        const abertura = new Date(sessao.dataAbertura);
+        const fechamento = new Date(sessao.dataFechamento);
+        
+        let status;
+        if (agora < abertura) {
+            status = "AGENDADA";
+        } else if (agora > fechamento) {
+            status = "ENCERRADA";
+        } else {
+            status = "ABERTA";
+        }
+        
+        document.getElementById('sessaoResult').innerHTML = `
+            <div class="data-item">
+                <strong>ID:</strong> ${sessao.id}<br>
+                <strong>Pauta:</strong> ${sessao.tituloPauta} (ID: ${sessao.pautaId})<br>
+                <strong>Abertura:</strong> ${dataAbertura}<br>
+                <strong>Fechamento:</strong> ${dataFechamento}<br>
+                <strong>Status:</strong> <span class="status-${status.toLowerCase()}">${status}</span>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Erro ao buscar sessão:', error);
+        mostrarMensagem('Erro ao buscar sessão. Verifique o console para detalhes.', false);
+        document.getElementById('sessaoResult').innerHTML = '';
+    }
 }

@@ -110,5 +110,20 @@ h3 {
 }
 
 #sessaoResult {
-    display: none;
+    margin-top: 15px;
+}
+
+.status-aberta {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.status-encerrada {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.status-agendada {
+    color: #ffc107;
+    font-weight: bold;
 }
