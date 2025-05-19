@@ -110,7 +110,19 @@ Foram implementados endpoints RESTful para as seguintes operações:
 
 ## 🧾 Endpoints de Associados
 
+### ➕ Criar Associado **POST** `http://localhost:8080/api/v1/associados`
+
+#### Exemplo:
+```json
+{
+  "nome": "João da Silva",
+  "cpf": "12345678901"
+}
+```
+
 ### 📋 Listar Associados **GET** `http://localhost:8080/api/v1/associados`
+
+### 🔍 Buscar Associado por ID **GET** `http://localhost:8080/api/v1/associados/1`
 
 ---
 

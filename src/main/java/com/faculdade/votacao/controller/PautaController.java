@@ -1,4 +1,3 @@
-
 package com.faculdade.votacao.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,27 +45,37 @@ public class PautaController {
                 .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
         }
     }
-    
+
     @Operation(summary = "Busca uma pauta pelo ID")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Pauta encontrada"),
-        @ApiResponse(responseCode = "404", description = "Pauta não encontrada")
+        @ApiResponse(responseCode = "204", description = "Nenhuma pauta encontrada")
     })
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPautaPorId(@PathVariable Long id) {
         try {
             PautaResponseDTO response = pautaInterface.buscarPauta(id);
-            return ResponseEntity.ok(response);
+            if (response != null) {
+                return ResponseEntity.ok(response);
+            }
+            return ResponseEntity.noContent().build();
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus())
                 .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
         }
     }
-    
+
     @Operation(summary = "Lista todas as pautas")
-    @ApiResponse(responseCode = "200", description = "Lista de pautas retornada com sucesso")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de pautas retornada com sucesso"),
+        @ApiResponse(responseCode = "204", description = "Nenhuma pauta encontrada")
+    })
     @GetMapping
     public ResponseEntity<List<PautaResponseDTO>> listarTodasPautas() {
-        return ResponseEntity.ok(pautaInterface.listarTodas());
+        List<PautaResponseDTO> pautas = pautaInterface.listarTodas();
+        if (pautas == null || pautas.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(pautas);
     }
 }

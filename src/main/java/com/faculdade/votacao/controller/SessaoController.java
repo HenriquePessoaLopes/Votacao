@@ -25,58 +25,51 @@ public class SessaoController {
         this.sessaoInterface = sessaoInterface;
     }
 
-   
-
     @Operation(summary = "Busca uma sessão pelo ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Sessão encontrada"),
-            @ApiResponse(responseCode = "404", description = "Sessão não encontrada")
+        @ApiResponse(responseCode = "200", description = "Sessão encontrada"),
+        @ApiResponse(responseCode = "204", description = "Nenhuma sessão encontrada")
     })
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarSessao(@PathVariable Long id) {
         try {
             SessaoResponseDTO response = sessaoInterface.buscarSessaoPorId(id);
-            return ResponseEntity.ok(response);
+            if (response != null) {
+                return ResponseEntity.ok(response);
+            }
+            return ResponseEntity.noContent().build();
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus())
-                    .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
+                .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
         }
     }
 
     @Operation(summary = "Abre ou agenda uma nova sessão de votação")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Sessão aberta ou agendada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "409", description = "Sessão já existe para esta pauta")
+        @ApiResponse(responseCode = "201", description = "Sessão aberta ou agendada com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+        @ApiResponse(responseCode = "409", description = "Sessão já existe para esta pauta")
     })
     @PostMapping
     public ResponseEntity<?> abrirSessao(@RequestBody AberturaSessaoRequestDTO request) {
         try {
             SessaoResponseDTO response;
-
             if (request.getDataInicio() != null || request.getDataFim() != null) {
-
                 response = sessaoInterface.agendarSessao(
-                        request.getPautaId(),
-                        request.getDataInicio(),
-                        request.getDataFim(),
-                        request.getMinutos());
+                    request.getPautaId(),
+                    request.getDataInicio(),
+                    request.getDataFim(),
+                    request.getMinutos());
             } else {
-
                 response = sessaoInterface.abrirSessao(request.getPautaId(), request.getMinutos());
             }
-
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                    .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ErroResponseDTO(e.getMessage(), HttpStatus.CONFLICT.value()));
+                .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus())
-                    .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
+                .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
         }
     }
-
 }

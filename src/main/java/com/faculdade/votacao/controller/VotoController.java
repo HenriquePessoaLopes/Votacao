@@ -1,4 +1,3 @@
-
 package com.faculdade.votacao.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,53 +29,50 @@ public class VotoController {
 
     @Operation(summary = "Registra um novo voto")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Voto registrado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "409", description = "Associado já votou nesta pauta")
+        @ApiResponse(responseCode = "201", description = "Voto registrado com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+        @ApiResponse(responseCode = "409", description = "Associado já votou nesta pauta")
     })
     @PostMapping
-    public ResponseEntity<?> registrarVoto(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados do voto") @RequestBody VotoRequestDTO request) {
+    public ResponseEntity<?> registrarVoto(@RequestBody VotoRequestDTO request) {
         try {
             VotoResponseDTO response = votoInterface.registrarVoto(
-                    request.getPautaId(),
-                    request.getAssociadoId(),
-                    request.getOpcao());
+                request.getPautaId(),
+                request.getAssociadoId(),
+                request.getOpcao());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                    .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ErroResponseDTO(e.getMessage(), HttpStatus.CONFLICT.value()));
+                .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
         } catch (BusinessException e) {
             return ResponseEntity.status(e.getStatus())
-                    .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
+                .body(new ErroResponseDTO(e.getMessage(), e.getStatus().value()));
         }
     }
 
     @Operation(summary = "Contabiliza os votos de uma pauta")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Votos contabilizados com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Pauta não encontrada"),
-            @ApiResponse(responseCode = "400", description = "Sessão ainda está aberta")
+        @ApiResponse(responseCode = "200", description = "Votos contabilizados com sucesso"),
+        @ApiResponse(responseCode = "204", description = "Nenhum resultado encontrado"),
+        @ApiResponse(responseCode = "400", description = "Sessão ainda está aberta")
     })
     @GetMapping("/resultado/{pautaId}")
     public ResponseEntity<?> contabilizarVotos(
-            @Parameter(description = "ID da pauta para contabilizar votos", required = true) @PathVariable Long pautaId) {
+        @Parameter(description = "ID da pauta para contabilizar votos", required = true) 
+        @PathVariable Long pautaId) {
         try {
             ResultadoVotacaoDTO resultado = votoInterface.contabilizarVotos(pautaId);
-            return ResponseEntity.ok(resultado);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErroResponseDTO(e.getMessage(), HttpStatus.NOT_FOUND.value()));
+            if (resultado != null) {
+                return ResponseEntity.ok(resultado);
+            }
+            return ResponseEntity.noContent().build();
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
+            return ResponseEntity.badRequest()
+                .body(new ErroResponseDTO(e.getMessage(), HttpStatus.BAD_REQUEST.value()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErroResponseDTO("Erro ao contabilizar votos: " + e.getMessage(),
-                            HttpStatus.INTERNAL_SERVER_ERROR.value()));
+                .body(new ErroResponseDTO("Erro ao contabilizar votos: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR.value()));
         }
     }
 }
