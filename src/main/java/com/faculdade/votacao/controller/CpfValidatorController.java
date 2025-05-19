@@ -1,11 +1,10 @@
 package com.faculdade.votacao.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.faculdade.votacao.enums.CpfStatus;
-import com.faculdade.votacao.service.CpfValidatorService;
+import com.faculdade.votacao.interfaces.CpfValidatorInterface;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,13 +13,16 @@ import java.util.Map;
 @RequestMapping("/api/v1/cpf")
 public class CpfValidatorController {
 
-    @Autowired
-    private CpfValidatorService cpfValidatorService;
+    private final CpfValidatorInterface cpfValidatorInterface;
+
+    public CpfValidatorController(CpfValidatorInterface cpfValidatorInterface) {
+        this.cpfValidatorInterface = cpfValidatorInterface;
+    }
     
     @GetMapping("/validar/{cpf}")
     public ResponseEntity<Map<String, String>> validarCpf(@PathVariable String cpf) {
         try {
-            CpfStatus status = cpfValidatorService.validarCpf(cpf);
+            CpfStatus status = cpfValidatorInterface.validarCpf(cpf);
             
             Map<String, String> response = new HashMap<>();
             response.put("status", status.name());
