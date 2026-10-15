@@ -17,7 +17,6 @@ import com.faculdade.votacao.repository.VotoRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class VotoService implements VotoInterface {
@@ -46,9 +45,7 @@ public class VotoService implements VotoInterface {
                         throw new IllegalStateException("Esta pauta não possui uma sessão aberta para votação");
                 }
 
-                if (votoRepository.findAll().stream()
-                                .anyMatch(v -> v.getAssociado().getId().equals(associadoId) &&
-                                                v.getPauta().getId().equals(pautaId))) {
+                if (votoRepository.existsByAssociadoIdAndPautaId(associadoId, pautaId)) {
                         throw new IllegalStateException("O associado já votou nesta pauta");
                 }
 
@@ -83,9 +80,7 @@ public class VotoService implements VotoInterface {
                         throw new IllegalStateException("A sessão de votação ainda está aberta");
                 }
 
-                List<Voto> votos = votoRepository.findAll().stream()
-                                .filter(v -> v.getPauta().getId().equals(pautaId))
-                                .collect(Collectors.toList());
+                List<Voto> votos = votoRepository.findByPautaId(pautaId);
 
                 int votosSim = (int) votos.stream()
                                 .filter(v -> v.getVotoFavoravel() == OpcaoVoto.SIM)
