@@ -13,7 +13,10 @@ O sistema de votação foi desenvolvido como uma API REST utilizando Spring Boot
 ## 🚀 Tecnologias Utilizadas  
 - **Java** (Spring Boot)    
 - **Spring Data JPA**: Para persistência de dados
-- **H2 Database**: Para ambiente de desenvolvimento
+- **H2 Database**: Para ambiente de desenvolvimento (PostgreSQL suportado)
+- **Swagger / OpenAPI (springdoc)**: Documentação interativa dos endpoints
+- **HTML, CSS e JavaScript**: Front-end responsivo servido pela própria aplicação
+- **JUnit 5, Mockito e MockMvc**: Testes unitários e de ponta a ponta
 - **Lombok**: Para redução de código boilerplate
 - **Controle de versão**: Git e GitHub
 
@@ -140,50 +143,107 @@ Foram implementados endpoints RESTful para as seguintes operações:
 
 
 ---
-## ⚙️ Como Configurar o Projeto  
+## ⚙️ Como Rodar o Projeto
 
-Siga os passos abaixo para configurar e rodar o projeto localmente.
+Este projeto foi desenvolvido em **Java 21** com **Spring Boot 3.4.3**, banco de dados **H2** em memória e um front-end em **HTML, CSS e JavaScript** servido pela própria aplicação.
+Para executá-lo, utilize o terminal da sua IDE (VS Code, IntelliJ etc.) aberto na pasta raiz do projeto.
 
-### ✅ Pré-requisitos  
-Certifique-se de ter as seguintes ferramentas instaladas em sua máquina:  
-1. [**Java 21LTS+**](https://www.oracle.com/java/technologies/javase-downloads.html)  
-- Certifique-se de que o Java esteja no **PATH** da sua máquina.  
-- Verifique a instalação executando no terminal:  
-```bash
-     java -version
-```  
-2. [**Maven**](https://maven.apache.org/download.cgi)  
-- Após a instalação, verifique se o Maven está no **PATH**:  
-```bash
-     mvn -version
-```  
+### ✅ Pré-requisitos
+- **Java 21 (LTS)** — confira com `java -version`.
+- **Git** — para clonar o repositório.
+- **Maven não precisa ser instalado**: o projeto já inclui o Maven Wrapper (`mvnw`).
 
-3. [**Git**](https://git-scm.com/downloads)  
-- Necessário para clonar o repositório.
-```bash
-   mvn -version
-```  
+### 🚀 Passo a passo (Windows PowerShell)
 
-4. IDE de sua escolha:  
-   - Recomendado: [**Visual Studio Code**](https://code.visualstudio.com/) ou [**IntelliJ**](https://www.jetbrains.com/pt-br/idea/).  
+**1. Clone o repositório**
 
----
-
-### 🚀 Passo a Passo para Rodar o Projeto  
-
-1. **Clone o Repositório**  
-Execute o seguinte comando no terminal para clonar o projeto:  
-```bash
-   git clone https://github.com/UnifacolFaculdade/Votacao
+```powershell
+git clone https://github.com/HenriquePessoaLopes/Votacao.git
+cd Votacao
 ```
-   
-3. Instale as Dependências
-No diretório do projeto, execute o comando para baixar as dependências:
-```bash
-   mvn clean install
+
+**2. Suba a aplicação**
+
+```powershell
+.\mvnw.cmd clean spring-boot:run
 ```
-3.Execute o Projeto
-Para iniciar o servidor Spring Boot, rode:
-```bash
-mvn spring-boot:run
+
+Aguarde até aparecer no terminal a mensagem `Started VotacaoApplication`. A partir daí a API está no ar em `http://localhost:8080`.
+
+**3. Execute os testes automatizados**
+
+Pare a aplicação (`Ctrl + C` no terminal) e rode:
+
+```powershell
+.\mvnw.cmd clean test
 ```
+
+O resultado esperado é `Tests run: 9, Failures: 0, Errors: 0` seguido de `BUILD SUCCESS`.
+
+**4. Limpar o cache de compilação**
+
+Antes de repetir os testes ou subir a aplicação novamente, apague os arquivos compilados anteriormente:
+
+```powershell
+.\mvnw.cmd clean
+```
+
+> Os comandos acima já incluem o `clean`, então ele é executado automaticamente. Use-o isoladamente apenas quando quiser limpar o projeto sem rodar mais nada.
+> Isso evita que classes antigas ou geradas pela compilação automática da IDE causem erros na execução.
+> No VS Code, o projeto já traz o arquivo `.vscode/settings.json` com a compilação automática do Java desativada, para evitar esse conflito.
+
+No Linux/macOS use `./mvnw` no lugar de `.\mvnw.cmd`.
+
+### 🌐 Como testar a aplicação
+
+> ⚠️ **A aplicação precisa estar em execução (passo 2) para os endereços abaixo funcionarem.**
+
+| O que | Endereço |
+|---|---|
+| **Swagger UI** — testar os endpoints da API | http://localhost:8080/swagger-ui/index.html |
+| **Front-end** — interface web do sistema | http://localhost:8080 |
+| Especificação OpenAPI (JSON) | http://localhost:8080/api-docs |
+| Console do banco H2 | http://localhost:8080/h2-console (JDBC URL: `jdbc:h2:mem:testdb`, usuário `sa`, senha vazia) |
+
+Os endpoints foram testados pelo **Swagger**: abra o link no navegador, escolha o endpoint, clique em **Try it out**, preencha o corpo da requisição e clique em **Execute**.
+O front-end permite executar o mesmo fluxo de forma visual: cadastrar associados e pautas, abrir sessões, votar e consultar o resultado.
+
+> O banco H2 é em memória: os dados são apagados toda vez que a aplicação reinicia.
+
+### 🖥️ Front-end
+
+A interface web fica em `src/main/resources/static` e é servida pela própria aplicação, sem precisar instalar Node, npm ou qualquer dependência. É feita com **HTML, CSS e JavaScript puro**.
+
+| Tela | O que faz |
+|---|---|
+| **Painel** | Mostra os totais de associados, pautas e sessões abertas, e o passo a passo do fluxo de votação. |
+| **Associados** | Cadastra associados (com máscara de CPF), lista todos e busca por ID. |
+| **Pautas** | Cadastra pautas, lista, busca por ID e atalhos para abrir sessão ou ver o resultado. |
+| **Sessões** | Abre ou agenda sessões de votação e acompanha o status e a contagem regressiva ao vivo. |
+| **Votação** | Registra o voto SIM ou NÃO de um associado em uma pauta. |
+| **Resultados** | Exibe o veredito (aprovada, reprovada ou empate) com barras de percentual. |
+
+**Segurança do front-end**
+- **Proteção contra XSS:** nenhum dado vindo da API ou do usuário é inserido como HTML. O JavaScript não usa `innerHTML`; nomes, títulos e descrições entram sempre como texto. Um nome como `<script>alert(1)</script>` aparece escrito na tela e nunca é executado.
+- **Content Security Policy (CSP):** o `index.html` define uma política que só permite scripts e estilos do próprio servidor, bloqueando scripts embutidos e de terceiros.
+- **Sem dependências externas:** nenhuma biblioteca ou fonte é carregada de CDN.
+- **Validação no cliente:** nome e título obrigatórios, CPF com 11 dígitos e limite de 255 caracteres nos campos de texto (a validação final continua na API).
+
+**Usabilidade:** tema claro e escuro (segue o sistema e pode ser alternado), layout responsivo para celular, navegação por teclado e rótulos de acessibilidade.
+
+### 🔁 Fluxo de uso
+1. `POST /api/v1/associados` — cadastrar um associado.
+2. `POST /api/v1/pautas` — cadastrar uma pauta.
+3. `POST /api/v1/sessoes` — abrir a sessão da pauta (`minutos`, padrão 1).
+4. `POST /api/v1/votos` — votar `SIM` ou `NAO` enquanto a sessão estiver aberta.
+5. `GET /api/v1/votos/resultado/{pautaId}` — consultar o resultado **depois** que a sessão encerrar.
+
+### 🧪 Testes automatizados
+
+A suíte tem 9 testes:
+- **Teste de ponta a ponta** (`FluxoVotacaoIntegrationTest`): cadastra associado e pauta, abre a sessão, vota, e verifica que voto duplicado e segunda sessão na mesma pauta retornam `409 Conflict`.
+- **Testes unitários** (`VotoServiceTest`, com Mockito): voto em sessão encerrada, voto duplicado, contagem antes do encerramento, pauta aprovada e empate.
+
+### 🗄️ Usar PostgreSQL em vez do H2
+O driver do PostgreSQL já está no `pom.xml`. Para usá-lo, substitua as propriedades `spring.datasource.*` e `spring.jpa.database-platform` em `src/main/resources/application.properties` pelos dados do seu banco.
+
